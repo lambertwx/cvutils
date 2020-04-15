@@ -133,8 +133,35 @@ function drawCross(ctx, x, y) {
     ctx.stroke();
 
 }
-
 </script>
+
 <script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+
+<!-- The script tags below this line demonstrate how you can load two different WebAssembly modules into the
+same HTML file.  Above this line we loaded opencv.js.  Now we'll load the WASM produced from
+cvutils/demos/wasmdemo/main.c.  Using the makefile in that folder we generated main-module.js by invoking emcc
+with the -s MODULARIZE=1 flag.  -->
+
+<script type="text/javascript">
+var Main;
+
+function onMainReady() {
+    // This is the design pattern espoused by
+    // https://emscripten.org/docs/getting_started/FAQ.html#how-can-i-tell-when-the-page-is-fully-loaded-and-it-is-safe-to-call-compiled-functions and
+    // https://emscripten.org/docs/getting_started/FAQ.html#can-i-use-multiple-emscripten-compiled-programs-on-one-web-page
+    //
+    // But to find the details to make it work I had to dive into the comments on the MODULARIZE flag in
+    // https://github.com/emscripten-core/emscripten/blob/master/src/settings.js
+
+    Main = MyMain().then(function(Module) {
+        // this is reached when everything is ready, and you can call methods on Module
+        console.log("foo bar baz");
+        console.log("fib 11 is", Main._fib(11));
+    });
+}
+</script>
+
+<script src="main-module.js" onload="onMainReady();" type="text/javascript"></script>
+
 </body>
 </html>
