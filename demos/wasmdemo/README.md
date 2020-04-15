@@ -3,7 +3,7 @@
 There is lots of aging documentation and repos out there, which is understandable given the speed with which WebAssembly is evolving.
 This is what worked for me in April 2020.
 
-1. Get `emcc` by downloading from [https://github.com/emscripten-core/emsdk](emscripten-core/emsdk) and following the instructions at https://emscripten.org/docs/getting_started/downloads.html
+1. Get `emcc` by downloading from [emscripten-core/emsdk] (https://github.com/emscripten-core/emsdk) and following the instructions at https://emscripten.org/docs/getting_started/downloads.html
 
 2. Invoke `make` with no arguments.  This will use `emcc` to build main.wasm, main.js, and main.html from main.c.  
 
@@ -18,7 +18,7 @@ This is what worked for me in April 2020.
 
 - https://emscripten.org/docs/getting_started/FAQ.html - this covers many common errors and questions
 
-- the [https://github.com/emscripten-core/emscripten](emscripten-core/emscripten) repo - this focuses specifically on compiling C/C++ to WebAssembly, and supporting common library APIs.
+- the [emscripten-core/emscripten](https://github.com/emscripten-core/emscripten) repo - this focuses specifically on compiling C/C++ to WebAssembly, and supporting common library APIs.
 
  - https://emscripten.org/docs/compiling/index.html - Details about how incorporate emscripten and WebAssembly into build systems
 
