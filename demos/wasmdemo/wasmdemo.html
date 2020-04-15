@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Hello WebAssembly demo</title>
+</head>
+<body>
+<h2>Hello WebAssembly demo</h2>
+<p id="status">main.wasm is loading...</p>
+<p id="message"></p>
+<textarea id="output" rows="8"></textarea>
+
+<!-- Load the WebAssembly code
+  This onRuntimeInitialized below is the design pattern advocated by https://emscripten.org/docs/getting_started/FAQ.html
+  when you compile your code with emcc -g  -s WASM=1 -s EXPORTED_FUNCTIONS="['_fib']" -o main.js main.c
+
+  (That page also advocates another way that involves the MODULARIZE flag to emcc, but I haven't tried that.
+  According to the FAQ page above, that technique is useful when you have to import multiple modules.) 
+-->
+
+<script type="text/javascript">
+    // It's important that this precede the script tag where you import main.js
+    var Module = {
+        // I stole this from the .html code that gets output when you tell emcc to build .html output.
+        // It handles the C code's printfs to stdout.
+        print: (function() {
+          var element = document.getElementById('output');
+          if (element) element.value = ''; // clear browser cache
+          return function(text) {
+            if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+            // These replacements are necessary if you render to raw HTML
+            //text = text.replace(/&/g, "&amp;");
+            //text = text.replace(/</g, "&lt;");
+            //text = text.replace(/>/g, "&gt;");
+            //text = text.replace('\n', '<br>', 'g');
+            console.log(text);
+            if (element) {
+              element.value += text + "\n";
+              //element.scrollTop = element.scrollHeight; // focus on bottom
+            }
+          };
+        })(),
+        // I stole this from the .html code that gets output when you tell emcc to build .html output.
+        // It handles the C code's printfs to stderr.
+        printErr: function(text) {
+          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          console.error(text);
+        },
+        onRuntimeInitialized: function() {
+            document.getElementById('status').innerHTML = 'WASM is ready.';
+            console.log("fib 10 is ", Module._fib(10));
+            document.getElementById('message').innerHTML = "fib 11 is " + Module._fib(11);
+        }
+    };
+</script>
+
+
+<script async src="main.js" type="text/javascript"></script>
+
+</body>
+</html>
+
