@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Hello OpenCV.js</title>
+</head>
+<body>
+<h2>Hello OpenCV.js</h2>
+<p id="status">OpenCV.js is loading...</p>
+<div>
+  <div class="inputoutput">
+    <img id="imageSrc" alt="No Image" />
+    <div class="caption">imageSrc <input type="file" id="fileInput" name="file" /></div>
+  </div>
+  <div class="inputoutput">
+    <canvas id="canvasOutput" ></canvas>
+    <div class="caption">canvasOutput</div>
+  </div>
+</div>
+<script type="text/javascript">
+let imgElement = document.getElementById('imageSrc');
+let inputElement = document.getElementById('fileInput');
+inputElement.addEventListener('change', (e) => {
+  imgElement.src = URL.createObjectURL(e.target.files[0]);
+}, false);
+imgElement.onload = function() {
+  let mat = cv.imread(imgElement);
+  let dst = new cv.Mat();
+
+  cv.cvtColor(mat, dst, cv.COLOR_RGBA2GRAY);
+  // cv.goodFeaturesToTrack(dst, corners, 400 /*maxcorners*/, .0025 /*quality*/,
+  // 20 /*mindistance*/)
+  //const cvRect = new cv.Rect(0 /*left*/, 400 /*top*/, 600 /*width*/, 200 /*height*/);
+  //dst = mat.roi(cvRect);
+  //cv.imshow('canvasOutput', dst);
+  // drawCorners(document.getElementById("canvasOutput"), corners);
+  mat.delete();
+  dst.delete();
+};
+
+outputElement = document.getElementById("canvasOutput");
+imgElement.addEventListener('mousedown', e => {
+      const clientRect = imgElement.getBoundingClientRect();
+      const imgX = Math.round(e.clientX - clientRect.left);
+      const imgY = Math.round(e.clientY - clientRect.top);
+      console.log(imgX, imgY);
+
+
+      const src = cv.imread(imgElement);
+      const ROI_RADIUS = 150;
+      //const cvRect = new cv.Rect(imgX - ROI_RADIUS, imgY - ROI_RADIUS,
+      //    ROI_RADIUS * 2, ROI_RADIUS * 2);
+      const cvRect = cropRectToFit(src, imgX - ROI_RADIUS, imgY - ROI_RADIUS,
+          ROI_RADIUS * 2, ROI_RADIUS * 2);
+
+      const roiImg = src.roi(cvRect);
+      let grayRoiImg = new cv.Mat();
+      cv.cvtColor(roiImg, grayRoiImg, cv.COLOR_RGBA2GRAY);
+      const corners = findCorners(grayRoiImg);
+      cv.imshow('canvasOutput', roiImg);
+      drawCorners(outputElement, corners);
+      // TODO: Call .delete on all the methods.
+    }
+
+);
+
+function onOpenCvReady() {
+  document.getElementById('status').innerHTML = 'OpenCV.js is ready.';
+}
+
+/**
+ * Returns a rect that fits within the bounds of cvimg
+ */
+function cropRectToFit(cvimg, rl, rt, rwidth, rheight) {
+   if (rl < 0) {
+       rwidth += rl;
+       rl = 0;
+   }
+   if (rt < 0) {
+       rheight += rt;
+       rt = 0;
+   }
+   if ((rl + rwidth - 1) >= cvimg.cols) {
+       rwidth -= (rl + rwidth - cvimg.cols );
+   }
+    if ((rt + rheight - 1) >= cvimg.rows) {
+       rheight -= (rt + rheight - cvimg.rows );
+   }
+   return new cv.Rect(rl, rt, rwidth, rheight);
+}
+
+/**
+ *
+ * @param{cv.Mat} cvimg -
+ */
+function findCorners(cvimg) {
+    let corners = new cv.Mat();
+    // Note that the corners returned by goodFeaturesToTrack have only integer coords.
+    cv.goodFeaturesToTrack(cvimg, corners, 4 /*maxcorners*/, .05 /*quality*/, 20 /*mindistance*/);
+    for (let i = 0; i < corners.rows; i++) {
+        const x = corners.floatAt(i, 0);
+        const y = corners.floatAt(i, 1);
+        console.log(`x ${x},  y ${y}`);
+    }
+    const winSize = new cv.Size(5,5);
+    const zeroZone = new cv.Size(-1, -1);
+    const termCriteria = new cv.TermCriteria(1, 5, .2);
+    cv.cornerSubPix(cvimg, corners, winSize, zeroZone, termCriteria);
+
+    return corners;
+}
+
+function drawCorners(canvas, corners) {
+    let ctx = canvas.getContext("2d");
+    ctx.strokeStyle = "#FF0000";
+    ctx.lineWidth = .5;
+    //drawCross(ctx, 100, 100);
+    for (let i = 0; i < corners.rows; i++) {
+        const x = corners.floatAt(i, 0);
+        const y = corners.floatAt(i, 1);
+        drawCross(ctx, x, y);
+        console.log(`x ${x},  y ${y}`);
+    }
+}
+
+function drawCross(ctx, x, y) {
+    const CROSS_RADIUS = 10;
+    ctx.moveTo(x, y - CROSS_RADIUS);
+    ctx.lineTo(x, y + CROSS_RADIUS);
+    ctx.stroke();
+    ctx.moveTo(x - CROSS_RADIUS, y);
+    ctx.lineTo(x + CROSS_RADIUS, y);
+    ctx.stroke();
+
+}
+
+</script>
+<script async src="opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+</body>
+</html>
