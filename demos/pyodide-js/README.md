@@ -22,3 +22,4 @@ It's relatively easy to get started.  The HTML demo here shows you how to use Py
 - The list of currently distributed Python packages for pyodide is at 
 https://github.com/iodide-project/pyodide/tree/master/packages
 
+- https://observablehq.com/@gnestor/a-brief-tour-through-pyodide - some examples

@@ -87,7 +87,8 @@
             // the JavaScript console.
             pyeval('np.random.random((2,3))');
 
-            // Generate a matplotlib figure and display it in the browser.
+            // Generate a matplotlib figure and display it in the browser, using the pattern from
+            // https://stackoverflow.com/questions/56583696/how-to-redirect-render-pyodide-output-in-browser
             pyeval(`
                 import matplotlib.pyplot as plt
                 import io, base64
