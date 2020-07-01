@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Hello pyiodide demo</title>
+</head>
+<body>
+<h2>Hello pyodide demo</h2>
+<p id="status">pyodide.js is loading...</p>
+<p id="message"></p>
+<textarea id="output" rows="10" cols="60"></textarea>
+<h2>A matplotlib figure</h2>
+<div id="pyplotdiv"><img id="pyplotfigure"/></div>
+
+
+<!-- Load the pyiodide package, as per https://pyodide.readthedocs.io/en/latest/using_pyodide_from_javascript.html
+-->
+<script type="text/javascript">
+        // set the pyodide files URL (packages.json, pyodide.asm.data etc)
+        window.languagePluginUrl = 'https://pyodide-cdn2.iodide.io/v0.15.0/full/';
+</script>
+<script src="https://pyodide-cdn2.iodide.io/v0.15.0/full/pyodide.js"></script>
+
+<script type="text/javascript">
+    function display(text) {
+        var element = document.getElementById('output');
+        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+        // These replacements are necessary if you render to raw HTML
+        //text = text.replace(/&/g, "&amp;");
+        //text = text.replace(/</g, "&lt;");
+        //text = text.replace(/>/g, "&gt;");
+        //text = text.replace('\n', '<br>', 'g');
+        console.log(text);
+        if (element) {
+            element.value += text + "\n";
+            element.scrollTop = element.scrollHeight; // focus on bottom
+        }
+    }
+
+    function pyeval(pystr) {
+        result = pyodide.runPython(pystr);
+        display(result);
+    }
+
+    // For loading raw Python code (not packaged) from a URL
+    function pyload(url) {
+        const req = new XMLHttpRequest();
+        req.open("GET", url, false);  // Synchronous request (yes I know this is bad form)
+        req.send();
+        const fileContents = req.responseText;
+        console.log(fileContents);
+
+        // Now load it into the interpreter.
+        result = pyeval(fileContents);
+        display(result);
+    }
+
+    languagePluginLoader.then(function () {
+        let result;
+        document.getElementById('status').innerHTML = 'pyodide is ready.';
+        pyeval('import sys\nsys.version');
+
+        // Show that successive commands are all running inside the same interpreter
+        pyeval('a = 3');
+        pyeval('b = 10');
+        pyeval('a + b');
+
+        // Demonstrate loading a Python function "fib()" from a file.
+        pyload('./fib.py');
+
+        // We read a Python function "fib()".  Now let's load it into the interpreter.
+        //pyeval(fileContents);
+
+        // Now let's call the fib() function
+        pyeval('"Fibonacci 12 = {0}".format(fib(12))');
+
+        // Note that if you use Python's print, it will print on the Javascript console.
+        // However, the printed string will not be returned by Python as the result of the print
+        // statement, so pyeval will display only 'undefined'
+        pyeval('print("Fibonacci 10 = {0}".format(fib(10)))');
+
+        pyodide.loadPackage(["matplotlib", "numpy", "sympy"]).then(() => {
+            display('<loaded numpy>');
+            pyeval('import numpy as np');
+            // Confirm we can call numpy code.  Note that this prints in the HTML textarea as
+            // a 1D array, but it's truly a 2D array as we requested, as can be seen by the output in
+            // the JavaScript console.
+            pyeval('np.random.random((2,3))');
+
+            // Generate a matplotlib figure and display it in the browser.
+            pyeval(`
+                import matplotlib.pyplot as plt
+                import io, base64
+
+                fig, ax = plt.subplots()
+                ax.plot([1,3,2])
+
+                # Serialize the figure into a global variable
+                buf = io.BytesIO()
+                fig.savefig(buf, format='png')
+                buf.seek(0)
+                img_str = 'data:image/png;base64,' + base64.b64encode(buf.read()).decode('UTF-8')`
+            );
+            // Display the python global variable holding the serialized figure into the
+            // HTML img tag.
+            document.getElementById("pyplotfigure").src=pyodide.globals.img_str;
+
+            // Demonstrate some computational geometry
+            pyeval(`
+                from sympy import Polygon
+                p1, p2, p3, p4, p5 = [(0, 0), (1, 0), (5, 1), (0, 1), (3, 0)]
+                poly1 = Polygon(p1, p2, p3, p4)
+                print("Area is {0}".format(poly1.area))
+
+                poly2 = Polygon((.5, -.5), (2, -.5), (2,2), (.5, 1.5))
+                print("Poly2 is {0}".format(poly2))
+                # Compute the intersection.  However, note that that you only get back a list of
+                # points; you don't get back a Polygon.
+                # That's because unfortunately sympy Polygons aren't really filled polygons.
+                # As explained in https://stackoverflow.com/questions/48271539/intersection-between-segment-and-interior-of-polygon-in-sympy ,
+                # they are really polygonal curves.  As such, they don't return a polygon when
+                # you intersect two polygons.
+                "Intersection is {0}".format(poly2.intersection(poly1))
+
+                # So what other computational geometry packages will let us do polygon ops?
+                # - shapely seems unlikely to come to WebAssembly since it relies on a Java package.
+                # - scikit-spatial doesn't seem to offer polygon intersection
+                # - scikit-geometry looks good, but it is just wrappers around the CGAL C++ library.
+                #   So we would need to install CGAL (note that the core licenses for this seem
+                #   to be Lesser GPL v3).  Maybe we could port that to WebAssembly using https://github.com/marcosscriven/cgaljs as a start.
+                #   Then try to follow the instructions in https://pyodide.readthedocs.io/en/latest/new_packages.html to
+                #   port scikit-geometry to pyiodide.
+            `);
+        });
+        //
+
+    });
+
+</script>
+
+
+
+</body>
+</html>
+
